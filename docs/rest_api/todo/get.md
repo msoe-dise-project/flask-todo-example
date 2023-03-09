@@ -21,12 +21,13 @@ Lists all todo items
 
 ```json
 {
-    "todo_items": [
+	"todo_items": [
 	 	{
 			"item_id": 123,
 			"description": "Run a load of laundry",
 			"due_date" : "2023-03-07T18:34:09.157215",
 			"complete" : false
 		}
+	]
 }
 ```
