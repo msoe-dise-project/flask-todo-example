@@ -21,7 +21,7 @@ class TodoServiceTests(unittest.TestCase):
                 
         response = requests.post(self.get_url(), json=obj)
         
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
         
     def test_list(self):
         for item_id in range(1, 6):
@@ -32,10 +32,7 @@ class TodoServiceTests(unittest.TestCase):
 
             response = requests.post(self.get_url(), json=obj)
 
-            self.assertEqual(response.status_code, 200)
-
-        response = requests.post(self.get_url(), json=obj)
-        self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.status_code, 201)
 
         url = os.path.join(self.get_url())
         response = requests.get(self.get_url())
@@ -44,7 +41,7 @@ class TodoServiceTests(unittest.TestCase):
 
         todo_items = response.json()
 
-        self.assertGreaterEqual(len(todo_items["todos"]), 5)
+        self.assertGreaterEqual(len(todo_items["todo_items"]), 5)
 
     def test_get(self):
         obj = {
@@ -53,7 +50,7 @@ class TodoServiceTests(unittest.TestCase):
         }
 
         response = requests.post(self.get_url(), json=obj)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
         obj = response.json()
         item_id = obj["item_id"]
 
@@ -75,7 +72,7 @@ class TodoServiceTests(unittest.TestCase):
         
         response = requests.post(self.get_url(), json=obj)
         
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
 
         obj = response.json()
 
@@ -99,7 +96,7 @@ class TodoServiceTests(unittest.TestCase):
         
         response = requests.post(self.get_url(), json=obj)
         
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
 
         obj = response.json()
 
@@ -122,7 +119,7 @@ class TodoServiceTests(unittest.TestCase):
         
         response = requests.post(self.get_url(), json=obj)
         
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
 
         obj = response.json()
         item_id = obj["item_id"]
@@ -152,7 +149,7 @@ class TodoServiceTests(unittest.TestCase):
         
         response = requests.post(self.get_url(), json=obj)
         
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
 
         obj = response.json()
         item_id = obj["item_id"]
@@ -160,7 +157,7 @@ class TodoServiceTests(unittest.TestCase):
         response = requests.get(self.get_url())
         obj = response.json()
         
-        todo_ids = [todo["item_id"] for todo in obj["todos"]]
+        todo_ids = [todo["item_id"] for todo in obj["todo_items"]]
         
         self.assertIn(item_id, todo_ids)
         
@@ -171,7 +168,7 @@ class TodoServiceTests(unittest.TestCase):
         response = requests.get(self.get_url())
         obj = response.json()
         
-        todo_ids = [todo["item_id"] for todo in obj["todos"]]
+        todo_ids = [todo["item_id"] for todo in obj["todo_items"]]
         
         self.assertNotIn(item_id, todo_ids)
 

@@ -67,16 +67,22 @@ def create_todo():
     with psycopg2.connect(uri) as conn:
         with conn.cursor() as cur:
             query = "INSERT INTO todo_items (description, due_date, completed) VALUES (%s, %s, %s) " + \
-                    "RETURNING item_id;"
+                    "RETURNING item_id, description, due_date, completed;"
             cur.execute(query, (todo.description, todo.due_date, False))
             
-            # returns a tuple with a single item
-            item_id = cur.fetchone()[0]
+            item_id, description, due_date, complete = cur.fetchone()
 
     conn.commit()
     conn.close()
+    
+    obj = {
+        "item_id" : item_id,
+        "description" : description,
+        "due_date" : None if due_date is None else due_date.isoformat(),
+        "complete" : complete
+    }
 
-    return jsonify({"item_id" : item_id}), 200
+    return jsonify(obj), 201
     
 @app.route("/v1/todos", methods=["GET"])
 def list_todos():
@@ -92,19 +98,19 @@ def list_todos():
             cur.execute(query)
             
             todo_items = []
-            for item_id, description, due_date, completed in cur.fetchall():
+            for item_id, description, due_date, complete in cur.fetchall():
                 item = {
                     "item_id" : item_id,
                     "description" : description,
                     "due_date" : None if due_date is None else due_date.isoformat(),
-                    "completed" : completed
+                    "complete" : complete
                 }
                 
                 todo_items.append(item)
 
     conn.close()
 
-    return jsonify({"todos" : todo_items}), 200
+    return jsonify({"todo_items" : todo_items}), 200
     
 @app.route("/v1/todos/<int:todo_id>", methods=["GET"])
 def get_todo(todo_id):
@@ -144,16 +150,22 @@ def delete_todo(todo_id):
     with psycopg2.connect(uri) as conn:
         with conn.cursor() as cur:
             query = "DELETE FROM todo_items WHERE item_id = %s " + \
-                    "RETURNING item_id;"
+                    "RETURNING description, due_date, completed;"
             cur.execute(query, (todo_id, ))
             
-            # returns a tuple with a single item
-            item_id = cur.fetchone()[0]
+            description, due_date, completed = cur.fetchone()
 
     conn.commit()
     conn.close()
+    
+    response = {
+        "item_id" : todo_id,
+        "description" : description,
+        "due_date" : None if due_date is None else due_date.isoformat(),
+        "complete" : completed
+    }
 
-    return jsonify({"item_id" : item_id}), 200
+    return jsonify(response), 200
     
 @app.route("/v1/todos/<int:todo_id>/mark_complete", methods=["PUT"])
 def mark_todo_complete(todo_id):
@@ -166,16 +178,22 @@ def mark_todo_complete(todo_id):
     with psycopg2.connect(uri) as conn:
         with conn.cursor() as cur:
             query = "UPDATE todo_items SET completed = true WHERE item_id = %s " + \
-                    "RETURNING item_id;"
+                    "RETURNING description, due_date, completed;"
             cur.execute(query, (todo_id, ))
             
-            # returns a tuple with a single item
-            item_id = cur.fetchone()[0]
+            description, due_date, completed = cur.fetchone()
 
     conn.commit()
     conn.close()
+    
+    response = {
+        "item_id" : todo_id,
+        "description" : description,
+        "due_date" : None if due_date is None else due_date.isoformat(),
+        "complete" : completed
+    }
 
-    return jsonify({"item_id" : item_id}), 200
+    return jsonify(response), 200
 
 @app.route("/v1/todos/<int:todo_id>/mark_incomplete", methods=["PUT"])
 def mark_todo_incomplete(todo_id):
@@ -188,16 +206,22 @@ def mark_todo_incomplete(todo_id):
     with psycopg2.connect(uri) as conn:
         with conn.cursor() as cur:
             query = "UPDATE todo_items SET completed = false WHERE item_id = %s " + \
-                    "RETURNING item_id;"
+                    "RETURNING description, due_date, completed;"
             cur.execute(query, (todo_id, ))
             
-            # returns a tuple with a single item
-            item_id = cur.fetchone()[0]
+            description, due_date, completed = cur.fetchone()
 
     conn.commit()
     conn.close()
+    
+    response = {
+        "item_id" : todo_id,
+        "description" : description,
+        "due_date" : None if due_date is None else due_date.isoformat(),
+        "complete" : completed
+    }
 
-    return jsonify({"item_id" : item_id}), 200
+    return jsonify(response), 200
     
 @app.route("/v1/todos/<int:todo_id>/due_date", methods=["PUT"])
 def set_todo_due_date(todo_id):
@@ -217,16 +241,22 @@ def set_todo_due_date(todo_id):
     with psycopg2.connect(uri) as conn:
         with conn.cursor() as cur:
             query = "UPDATE todo_items SET due_date = %s WHERE item_id = %s " + \
-                    "RETURNING item_id;"
+                    "RETURNING description, due_date, completed;"
             cur.execute(query, (due_date.due_date, todo_id, ))
             
-            # returns a tuple with a single item
-            item_id = cur.fetchone()[0]
+            description, due_date, completed = cur.fetchone()
 
     conn.commit()
     conn.close()
+    
+    response = {
+        "item_id" : todo_id,
+        "description" : description,
+        "due_date" : None if due_date is None else due_date.isoformat(),
+        "complete" : completed
+    }
 
-    return jsonify({"item_id" : item_id}), 200
+    return jsonify(response), 200
 
 
 if __name__ == "__main__":
