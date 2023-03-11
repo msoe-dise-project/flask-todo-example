@@ -13,6 +13,10 @@ from marshmallow import post_load
 from marshmallow import Schema
 from marshmallow import ValidationError
 
+from prometheus_client import Counter
+from prometheus_client import generate_latest
+from prometheus_client import Histogram
+
 import psycopg2
 from psycopg2.extras import Json
 
@@ -24,6 +28,9 @@ PORT_KEY = "POSTGRES_PORT"
 DEFAULT_PORT = 5432
 
 app = Flask(__name__)
+
+request_counter = Counter("requests", "Number of Requests Received", ["request_type"])
+response_times = Histogram("response_times", "Distribution of Request Times", ["request_type"])
 
 class TodoItem:
     def __init__(self, description, due_date=None):
@@ -50,7 +57,10 @@ class DueDateSchema(Schema):
         return DueDate(**data)
 
 @app.route("/v1/todos", methods=["POST"])
+@response_times.labels(request_type="post::todos").time()
 def create_todo():
+    request_counter.labels(request_type="post::todos").inc()
+
     payload = request.get_json()
     
     try:
@@ -85,7 +95,10 @@ def create_todo():
     return jsonify(obj), 201
     
 @app.route("/v1/todos", methods=["GET"])
+@response_times.labels(request_type="get::todos").time()
 def list_todos():
+    request_counter.labels(request_type="get::todos").inc()
+
     uri = "postgresql://{}:{}@{}:{}/{}".format(os.environ.get(USERNAME_KEY),
                                                os.environ.get(PASSWORD_KEY),
                                                os.environ.get(HOST_KEY),
@@ -113,7 +126,10 @@ def list_todos():
     return jsonify({"todo_items" : todo_items}), 200
     
 @app.route("/v1/todos/<int:todo_id>", methods=["GET"])
+@response_times.labels(request_type="get::todos::todoId").time()
 def get_todo(todo_id):
+    request_counter.labels(request_type="get::todos::todoId").inc()
+
     uri = "postgresql://{}:{}@{}:{}/{}".format(os.environ.get(USERNAME_KEY),
                                                os.environ.get(PASSWORD_KEY),
                                                os.environ.get(HOST_KEY),
@@ -140,7 +156,10 @@ def get_todo(todo_id):
     return jsonify(response), 200
 
 @app.route("/v1/todos/<int:todo_id>", methods=["DELETE"])
+@response_times.labels(request_type="delete::todos::todoId").time()
 def delete_todo(todo_id):
+    request_counter.labels(request_type="delete::todos::todoId").inc()
+
     uri = "postgresql://{}:{}@{}:{}/{}".format(os.environ.get(USERNAME_KEY),
                                                os.environ.get(PASSWORD_KEY),
                                                os.environ.get(HOST_KEY),
@@ -168,7 +187,10 @@ def delete_todo(todo_id):
     return jsonify(response), 200
     
 @app.route("/v1/todos/<int:todo_id>/mark_complete", methods=["PUT"])
+@response_times.labels(request_type="put::todos::todoId::mark_complete").time()
 def mark_todo_complete(todo_id):
+    request_counter.labels(request_type="put::todos::todoId::mark_complete").inc()
+
     uri = "postgresql://{}:{}@{}:{}/{}".format(os.environ.get(USERNAME_KEY),
                                                os.environ.get(PASSWORD_KEY),
                                                os.environ.get(HOST_KEY),
@@ -196,7 +218,10 @@ def mark_todo_complete(todo_id):
     return jsonify(response), 200
 
 @app.route("/v1/todos/<int:todo_id>/mark_incomplete", methods=["PUT"])
+@response_times.labels(request_type="put::todos::todoId::mark_incomplete").time()
 def mark_todo_incomplete(todo_id):
+    request_counter.labels(request_type="put::todos::todoId::mark_incomplete").inc()
+    
     uri = "postgresql://{}:{}@{}:{}/{}".format(os.environ.get(USERNAME_KEY),
                                                os.environ.get(PASSWORD_KEY),
                                                os.environ.get(HOST_KEY),
@@ -224,7 +249,10 @@ def mark_todo_incomplete(todo_id):
     return jsonify(response), 200
     
 @app.route("/v1/todos/<int:todo_id>/due_date", methods=["PUT"])
+@response_times.labels(request_type="put::todos::todoId::due_date").time()
 def set_todo_due_date(todo_id):
+    request_counter.labels(request_type="put::todos::todoId::due_date").inc()
+
     payload = request.get_json()
     
     try:
@@ -258,6 +286,9 @@ def set_todo_due_date(todo_id):
 
     return jsonify(response), 200
 
+@app.route("/metrics")
+def metrics():
+    return generate_latest()
 
 if __name__ == "__main__":
     if DATABASE_KEY not in os.environ or \
