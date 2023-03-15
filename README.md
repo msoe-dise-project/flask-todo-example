@@ -6,3 +6,8 @@ A simple RESTful application demo that uses Flask and Postgres to manage a to do
 * [Database schema](docs/database_schema.md)
 * [REST API](docs/rest_api/README.md)
 * [Running the service and tests](docs/running.md)
+
+## License
+
+Unless otherwise noted, the source files are distributed
+under the Apache Version 2.0 license found in the LICENSE file.
