@@ -265,18 +265,30 @@ def metrics():
     
 @app.route("/healthcheck", methods=["GET"])
 def healthcheck():
-    uri = get_db_uri()
-    with psycopg2.connect(uri) as conn:
-        with conn.cursor() as cur:
-            query = "SELECT count(*) FROM todo_items;"
-            cur.execute(query)
+    encountered_failure = False
+    
+    try:
+        uri = get_db_uri()
+        with psycopg2.connect(uri) as conn:
+            with conn.cursor() as cur:
+                query = "SELECT count(*) FROM todo_items;"
+                cur.execute(query)
 
-            # returns a tuple of 1 element
-            count = cur.fetchone()[0]
+                # returns a tuple of 1 element
+                count = cur.fetchone()[0]
 
-    conn.close()
+        conn.close()
+        db_healthy = True
+    except:
+        db_healthy = False
+        encountered_failure = True
 
-    return jsonify({"database" : { "healthy" : True }}), 200
+    if encountered_failure:
+        status_code = 500 # internal server error
+    else:
+        status_code = 200
+
+    return jsonify({"database" : { "healthy" : db_healthy }}), status_code
 
 if __name__ == "__main__":
     if DATABASE_KEY not in os.environ or \

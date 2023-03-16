@@ -33,3 +33,14 @@ Performs a healthcheck by verifying that the database can be reached and the mai
 **Condition** : If there is a failure of any type
 
 **Code** : `500 Internal Server Failure`
+
+**Content example**
+
+```
+	{
+		"database" :
+		{
+			"healthy" : False
+		}
+	}
+```
