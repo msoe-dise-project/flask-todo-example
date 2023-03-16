@@ -171,7 +171,22 @@ class TodoServiceTests(unittest.TestCase):
         todo_ids = [todo["item_id"] for todo in obj["todo_items"]]
         
         self.assertNotIn(item_id, todo_ids)
+        
+class MetricTests(unittest.TestCase):
+    def get_url(self):
+        return os.path.join(os.environ[BASE_URL_KEY], "metrics")
 
+    def test_metrics(self):
+        response = requests.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
+
+class HealthcheckTests(unittest.TestCase):
+    def get_url(self):
+        return os.path.join(os.environ[BASE_URL_KEY], "healthcheck")
+
+    def test_metrics(self):
+        response = requests.get(self.get_url())
+        self.assertEqual(response.status_code, 200)
 
 if __name__ == "__main__":
     unittest.main()

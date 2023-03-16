@@ -29,6 +29,14 @@ DEFAULT_PORT = 5432
 
 app = Flask(__name__)
 
+def get_db_uri():
+    uri = "postgresql://{}:{}@{}:{}/{}".format(os.environ.get(USERNAME_KEY),
+                                               os.environ.get(PASSWORD_KEY),
+                                               os.environ.get(HOST_KEY),
+                                               os.environ.get(PORT_KEY, DEFAULT_PORT),
+                                               os.environ.get(DATABASE_KEY))
+    return uri
+
 request_counter = Counter("requests", "Number of Requests Received", ["request_type"])
 response_times = Histogram("response_times", "Distribution of Request Times", ["request_type"])
 
@@ -68,12 +76,7 @@ def create_todo():
     except ValidationError as err:
         return jsonify(err.messages), 400
     
-    uri = "postgresql://{}:{}@{}:{}/{}".format(os.environ.get(USERNAME_KEY),
-                                               os.environ.get(PASSWORD_KEY),
-                                               os.environ.get(HOST_KEY),
-                                               os.environ.get(PORT_KEY, DEFAULT_PORT),
-                                               os.environ.get(DATABASE_KEY))
-
+    uri = get_db_uri()
     with psycopg2.connect(uri) as conn:
         with conn.cursor() as cur:
             query = "INSERT INTO todo_items (description, due_date, completed) VALUES (%s, %s, %s) " + \
@@ -99,12 +102,7 @@ def create_todo():
 def list_todos():
     request_counter.labels(request_type="get::todos").inc()
 
-    uri = "postgresql://{}:{}@{}:{}/{}".format(os.environ.get(USERNAME_KEY),
-                                               os.environ.get(PASSWORD_KEY),
-                                               os.environ.get(HOST_KEY),
-                                               os.environ.get(PORT_KEY, DEFAULT_PORT),
-                                               os.environ.get(DATABASE_KEY))
-
+    uri = get_db_uri()
     with psycopg2.connect(uri) as conn:
         with conn.cursor() as cur:
             query = "SELECT item_id, description, due_date, completed FROM todo_items;"
@@ -130,12 +128,7 @@ def list_todos():
 def get_todo(todo_id):
     request_counter.labels(request_type="get::todos::todoId").inc()
 
-    uri = "postgresql://{}:{}@{}:{}/{}".format(os.environ.get(USERNAME_KEY),
-                                               os.environ.get(PASSWORD_KEY),
-                                               os.environ.get(HOST_KEY),
-                                               os.environ.get(PORT_KEY, DEFAULT_PORT),
-                                               os.environ.get(DATABASE_KEY))
-
+    uri = get_db_uri()
     with psycopg2.connect(uri) as conn:
         with conn.cursor() as cur:
             query = "SELECT description, due_date, completed FROM todo_items " + \
@@ -160,12 +153,7 @@ def get_todo(todo_id):
 def delete_todo(todo_id):
     request_counter.labels(request_type="delete::todos::todoId").inc()
 
-    uri = "postgresql://{}:{}@{}:{}/{}".format(os.environ.get(USERNAME_KEY),
-                                               os.environ.get(PASSWORD_KEY),
-                                               os.environ.get(HOST_KEY),
-                                               os.environ.get(PORT_KEY, DEFAULT_PORT),
-                                               os.environ.get(DATABASE_KEY))
-
+    uri = get_db_uri()
     with psycopg2.connect(uri) as conn:
         with conn.cursor() as cur:
             query = "DELETE FROM todo_items WHERE item_id = %s " + \
@@ -191,12 +179,7 @@ def delete_todo(todo_id):
 def mark_todo_complete(todo_id):
     request_counter.labels(request_type="put::todos::todoId::mark_complete").inc()
 
-    uri = "postgresql://{}:{}@{}:{}/{}".format(os.environ.get(USERNAME_KEY),
-                                               os.environ.get(PASSWORD_KEY),
-                                               os.environ.get(HOST_KEY),
-                                               os.environ.get(PORT_KEY, DEFAULT_PORT),
-                                               os.environ.get(DATABASE_KEY))
-
+    uri = get_db_uri()
     with psycopg2.connect(uri) as conn:
         with conn.cursor() as cur:
             query = "UPDATE todo_items SET completed = true WHERE item_id = %s " + \
@@ -222,12 +205,7 @@ def mark_todo_complete(todo_id):
 def mark_todo_incomplete(todo_id):
     request_counter.labels(request_type="put::todos::todoId::mark_incomplete").inc()
     
-    uri = "postgresql://{}:{}@{}:{}/{}".format(os.environ.get(USERNAME_KEY),
-                                               os.environ.get(PASSWORD_KEY),
-                                               os.environ.get(HOST_KEY),
-                                               os.environ.get(PORT_KEY, DEFAULT_PORT),
-                                               os.environ.get(DATABASE_KEY))
-
+    uri = get_db_uri()
     with psycopg2.connect(uri) as conn:
         with conn.cursor() as cur:
             query = "UPDATE todo_items SET completed = false WHERE item_id = %s " + \
@@ -260,12 +238,7 @@ def set_todo_due_date(todo_id):
     except ValidationError as err:
         return jsonify(err.messages), 400
     
-    uri = "postgresql://{}:{}@{}:{}/{}".format(os.environ.get(USERNAME_KEY),
-                                               os.environ.get(PASSWORD_KEY),
-                                               os.environ.get(HOST_KEY),
-                                               os.environ.get(PORT_KEY, DEFAULT_PORT),
-                                               os.environ.get(DATABASE_KEY))
-
+    uri = get_db_uri()
     with psycopg2.connect(uri) as conn:
         with conn.cursor() as cur:
             query = "UPDATE todo_items SET due_date = %s WHERE item_id = %s " + \
@@ -289,6 +262,21 @@ def set_todo_due_date(todo_id):
 @app.route("/metrics")
 def metrics():
     return generate_latest()
+    
+@app.route("/healthcheck", methods=["GET"])
+def healthcheck():
+    uri = get_db_uri()
+    with psycopg2.connect(uri) as conn:
+        with conn.cursor() as cur:
+            query = "SELECT count(*) FROM todo_items;"
+            cur.execute(query)
+
+            # returns a tuple of 1 element
+            count = cur.fetchone()[0]
+
+    conn.close()
+
+    return jsonify({"database" : { "healthy" : True }}), 200
 
 if __name__ == "__main__":
     if DATABASE_KEY not in os.environ or \
