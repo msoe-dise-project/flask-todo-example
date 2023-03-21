@@ -7,8 +7,8 @@
 * [Get todo item](todo/itemId/get.md) : `GET /v1/todo/:itemId`
 * [Delete todo item](todo/itemId/delete.md) : `DELETE /v1/todo/:itemId`
 * [Mark todo item complete](todo/itemId/mark_complete/put.md) : `PUT /v1/todo/:itemId/mark_complete`
-* [Mark todo item incomplete](todo/itemId/mark_incomplete/put.md) : `PUT /v1/todo/<int:item_id>/mark_incomplete`
-* [Set todo item due date](todo/itemId/due_date/put.md) : `PUT /v1/todo/<int:item_id>/due_date`
+* [Mark todo item incomplete](todo/itemId/mark_incomplete/put.md) : `PUT /v1/todo/:itemId/mark_incomplete`
+* [Set todo item due date](todo/itemId/due_date/put.md) : `PUT /v1/todo/:itemId/due_date`
 
 ## Metrics
 
