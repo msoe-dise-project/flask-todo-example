@@ -23,6 +23,24 @@ class TodoServiceTests(unittest.TestCase):
         
         self.assertEqual(response.status_code, 201)
         
+    def test_bad_inserts(self):
+        obj = {
+            "due_date" : (dt.datetime.now() + dt.timedelta(days=1)).isoformat(),
+        }
+                
+        response = requests.post(self.get_url(), json=obj)
+        
+        self.assertEqual(response.status_code, 400)
+        
+        obj = {
+            "description" : "Write some tests",
+            "due_date" : "this is not a timestamp",
+        }
+                
+        response = requests.post(self.get_url(), json=obj)
+        
+        self.assertEqual(response.status_code, 400)
+        
     def test_list(self):
         for item_id in range(1, 6):
             obj = {
@@ -62,8 +80,14 @@ class TodoServiceTests(unittest.TestCase):
         todo_item = response.json()
         
         self.assertEqual(todo_item["item_id"], obj["item_id"])
+    
+    def test_bad_get(self):
+        missing_id = 99999
+        url = os.path.join(self.get_url(), str(missing_id))
+        response = requests.get(url)
         
-        
+        self.assertEqual(response.status_code, 404)
+    
     def test_mark_complete(self):
         obj = {
             "description" : "Write some tests",
@@ -88,6 +112,14 @@ class TodoServiceTests(unittest.TestCase):
         obj = response.json()
         self.assertEqual(obj["complete"], True)
         
+    def test_bad_mark_complete(self):
+        missing_id = 99999
+        url = os.path.join(self.get_url(), str(missing_id), "mark_complete")
+        url = os.path.join(self.get_url(), str(missing_id))
+        response = requests.get(url)
+    
+        self.assertEqual(response.status_code, 404)
+        
     def test_mark_incomplete(self):
         obj = {
             "description" : "Write some tests",
@@ -111,6 +143,13 @@ class TodoServiceTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         obj = response.json()
         self.assertEqual(obj["complete"], False)
+        
+    def test_bad_mark_complete(self):
+        missing_id = 99999
+        url = os.path.join(self.get_url(), str(missing_id))
+        response = requests.get(url)
+    
+        self.assertEqual(response.status_code, 404)
         
     def test_set_due_date(self):
         obj = {
@@ -142,6 +181,19 @@ class TodoServiceTests(unittest.TestCase):
         obj = response.json()
         self.assertEqual(obj["due_date"], due_date_str)
         
+    def test_bad_set_date(self):
+        missing_id = 99999
+        url = os.path.join(self.get_url(), str(missing_id), "due_date")
+        obj = { "due_date" : None }
+        response = requests.put(url, json=obj)
+    
+        self.assertEqual(response.status_code, 404)
+        
+        url = os.path.join(self.get_url(), str(missing_id), "due_date")
+        obj = { "due_date" : "this is not properly formatted" }
+        response = requests.put(url, json=obj)
+        self.assertEqual(response.status_code, 400)
+        
     def test_delete(self):
         obj = {
             "description" : "Write some tests"
@@ -172,6 +224,13 @@ class TodoServiceTests(unittest.TestCase):
         
         self.assertNotIn(item_id, todo_ids)
         
+    def test_bad_delete(self):
+        missing_id = 99999
+        url = os.path.join(self.get_url(), str(missing_id))
+        response = requests.delete(url)
+    
+        self.assertEqual(response.status_code, 404)
+        
 class MetricTests(unittest.TestCase):
     def get_url(self):
         return os.path.join(os.environ[BASE_URL_KEY], "metrics")
@@ -187,6 +246,7 @@ class HealthcheckTests(unittest.TestCase):
     def test_metrics(self):
         response = requests.get(self.get_url())
         self.assertEqual(response.status_code, 200)
+
 
 if __name__ == "__main__":
     unittest.main()
