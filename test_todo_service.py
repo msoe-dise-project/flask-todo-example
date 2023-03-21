@@ -249,4 +249,9 @@ class HealthcheckTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    if BASE_URL_KEY not in os.environ:
+        msg = "Must specify {} environmental variable.".format(BASE_URL_KEY)
+        print(msg, file=sys.stderr)
+        sys.exit(1)
+    
     unittest.main()
