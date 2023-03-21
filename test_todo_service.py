@@ -23,6 +23,24 @@ class TodoServiceTests(unittest.TestCase):
         
         self.assertEqual(response.status_code, 201)
         
+    def test_bad_inserts(self):
+        obj = {
+            "due_date" : (dt.datetime.now() + dt.timedelta(days=1)).isoformat(),
+        }
+                
+        response = requests.post(self.get_url(), json=obj)
+        
+        self.assertEqual(response.status_code, 400)
+        
+        obj = {
+            "description" : "Write some tests",
+            "due_date" : "this is not a timestamp",
+        }
+                
+        response = requests.post(self.get_url(), json=obj)
+        
+        self.assertEqual(response.status_code, 400)
+        
     def test_list(self):
         for item_id in range(1, 6):
             obj = {
