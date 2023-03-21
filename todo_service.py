@@ -164,6 +164,9 @@ def delete_todo(todo_id):
                     "RETURNING description, due_date, completed;"
             cur.execute(query, (todo_id, ))
             
+            if cur.rowcount == 0:
+                return jsonify({"error" : "No todo item with that id found"}), 404
+            
             description, due_date, completed = cur.fetchone()
 
     conn.commit()
@@ -190,6 +193,9 @@ def mark_todo_complete(todo_id):
                     "RETURNING description, due_date, completed;"
             cur.execute(query, (todo_id, ))
             
+            if cur.rowcount == 0:
+                return jsonify({"error" : "No todo item with that id found"}), 404
+            
             description, due_date, completed = cur.fetchone()
 
     conn.commit()
@@ -215,6 +221,9 @@ def mark_todo_incomplete(todo_id):
             query = "UPDATE todo_items SET completed = false WHERE item_id = %s " + \
                     "RETURNING description, due_date, completed;"
             cur.execute(query, (todo_id, ))
+            
+            if cur.rowcount == 0:
+                return jsonify({"error" : "No todo item with that id found"}), 404
             
             description, due_date, completed = cur.fetchone()
 
@@ -249,6 +258,9 @@ def set_todo_due_date(todo_id):
                     "RETURNING description, due_date, completed;"
             cur.execute(query, (due_date.due_date, todo_id, ))
             
+            if cur.rowcount == 0:
+                return jsonify({"error" : "No todo item with that id found"}), 404
+            
             description, due_date, completed = cur.fetchone()
 
     conn.commit()
@@ -263,7 +275,7 @@ def set_todo_due_date(todo_id):
 
     return jsonify(response), 200
 
-@app.route("/metrics")
+@app.route("/metrics", methods=["GET"])
 def metrics():
     return generate_latest()
     
