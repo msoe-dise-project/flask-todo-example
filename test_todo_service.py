@@ -80,8 +80,14 @@ class TodoServiceTests(unittest.TestCase):
         todo_item = response.json()
         
         self.assertEqual(todo_item["item_id"], obj["item_id"])
+    
+    def test_bad_get(self):
+        missing_id = 99999
+        url = os.path.join(self.get_url(), str(missing_id))
+        response = requests.get(url)
         
-        
+        self.assertEqual(response.status_code, 404)
+    
     def test_mark_complete(self):
         obj = {
             "description" : "Write some tests",
@@ -205,6 +211,7 @@ class HealthcheckTests(unittest.TestCase):
     def test_metrics(self):
         response = requests.get(self.get_url())
         self.assertEqual(response.status_code, 200)
+
 
 if __name__ == "__main__":
     unittest.main()

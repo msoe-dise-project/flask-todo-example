@@ -133,7 +133,11 @@ def get_todo(todo_id):
         with conn.cursor() as cur:
             query = "SELECT description, due_date, completed FROM todo_items " + \
                     "WHERE item_id = %s;"
+            
             cur.execute(query, (todo_id, ))
+            
+            if cur.rowcount == 0:
+                return jsonify({"error" : "No todo item with that id found"}), 404
             
             description, due_date, completed = cur.fetchone()
 
