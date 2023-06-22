@@ -26,6 +26,7 @@ USERNAME_KEY = "POSTGRES_USERNAME"
 PASSWORD_KEY = "POSTGRES_PASSWORD"
 PORT_KEY = "POSTGRES_PORT"
 DEFAULT_PORT = 5432
+DEFAULT_DATABASE = "todo_application"
 
 app = Flask(__name__)
 
@@ -34,7 +35,7 @@ def get_db_uri():
                                                os.environ.get(PASSWORD_KEY),
                                                os.environ.get(HOST_KEY),
                                                os.environ.get(PORT_KEY, DEFAULT_PORT),
-                                               os.environ.get(DATABASE_KEY))
+                                               os.environ.get(DATABASE_KEY, DEFAULT_DATABASE))
     return uri
 
 request_counter = Counter("requests", "Number of Requests Received", ["request_type"])
@@ -306,13 +307,9 @@ def healthcheck():
 
     return jsonify({"database" : { "healthy" : db_healthy }}), status_code
 
-if __name__ == "__main__":
-    if DATABASE_KEY not in os.environ or \
-       HOST_KEY not in os.environ or \
-       USERNAME_KEY not in os.environ or \
-       PASSWORD_KEY not in os.environ:
-        msg = "Must specify environmental variables {}, {}, {}, and {}.".format(DATABASE_KEY, HOST_KEY, USERNAME_KEY, PASSWORD_KEY)
-        print(msg, file=sys.stderr)
-        sys.exit(1)
-
-    app.run(debug=True, host="localhost", port="8000")
+if HOST_KEY not in os.environ or \
+   USERNAME_KEY not in os.environ or \
+   PASSWORD_KEY not in os.environ:
+    msg = "Must specify environmental variables {}, {}, and {}.".format(HOST_KEY, USERNAME_KEY, PASSWORD_KEY)
+    print(msg, file=sys.stderr)
+    sys.exit(1)
