@@ -27,6 +27,18 @@ dddc6d6d8a8c   postgres:bullseye   "docker-entrypoint.s…"   12 seconds ago   U
 
 Both containers should have a status of "healthy".  If you see "health: starting", wait a minute and query the status again.
 
+Once the service is running, you can run the tests and check their output like so:
+
+```bash
+$ docker compose up -d todo-tests
+$ docker logs todo-tests
+..............
+----------------------------------------------------------------------
+Ran 14 tests in 0.491s
+
+OK
+```
+
 ## Documentation
 
 * [Database schema](docs/database_schema.md)

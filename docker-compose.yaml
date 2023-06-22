@@ -52,6 +52,19 @@ services:
     environment:
       POSTGRES_HOST: "db"
       POSTGRES_USERNAME: "todo_service"
-      POSTGRES_PASSWORD: "apassword"
+      POSTGRES_PASSWORD: "abadpassword"
       FLASK_RUN_PORT: "8888"
       FLASK_RUN_HOST: "0.0.0.0"
+
+  todo-tests:
+    build:
+      context: ./tests
+      no_cache: true
+    image: todo-tests
+    container_name: todo-tests
+    restart: "no"
+    depends_on:
+      todo-service:
+        condition: service_healthy
+    environment:
+      BASE_URL: "http://todo-service:8888"
