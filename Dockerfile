@@ -9,4 +9,4 @@ COPY requirements.txt /service/
 RUN pip3 install -U pip wheel
 RUN pip3 install -r requirements.txt
 
-CMD flask run
+CMD flask --app app.todo_service:app run --debug
