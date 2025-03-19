@@ -1,5 +1,4 @@
 ---
-version: '3'
 services:
   db:
     image: docker.io/postgres:bullseye
@@ -53,6 +52,7 @@ services:
       POSTGRES_HOST: "db"
       POSTGRES_USERNAME: "todo_service"
       POSTGRES_PASSWORD: "abadpassword"
+      POSTGRES_DATABASE: "todo_application"
       FLASK_RUN_PORT: "8888"
       FLASK_RUN_HOST: "0.0.0.0"
 
