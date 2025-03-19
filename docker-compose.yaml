@@ -1,0 +1,70 @@
+---
+version: '3'
+services:
+  db:
+    image: docker.io/postgres:bullseye
+    container_name: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: "postgres"
+
+  database-setup:
+    build:
+      context: ./database-setup
+      no_cache: true
+    image: database-setup
+    container_name: database-setup
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: "db"
+      POSTGRES_USER_PASSWORD: "abadpassword"
+      POSTGRES_ADMIN_PASSWORD: "postgres"
+
+  todo-service:
+    build:
+      context: ./
+      no_cache: true
+    image: todo-service
+    container_name: todo-service
+    restart: "no"
+    healthcheck:
+      test: curl http://todo-service:8888/healthcheck || exit 1
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      db:
+        condition: service_healthy
+      database-setup:
+        condition: service_completed_successfully
+    ports:
+      - "8888:8888"    
+    environment:
+      POSTGRES_HOST: "db"
+      POSTGRES_USERNAME: "todo_service"
+      POSTGRES_PASSWORD: "abadpassword"
+      FLASK_RUN_PORT: "8888"
+      FLASK_RUN_HOST: "0.0.0.0"
+
+  todo-tests:
+    build:
+      context: ./tests
+      no_cache: true
+    image: todo-tests
+    container_name: todo-tests
+    restart: "no"
+    depends_on:
+      todo-service:
+        condition: service_healthy
+    environment:
+      BASE_URL: "http://todo-service:8888"
