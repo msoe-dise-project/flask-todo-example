@@ -19,33 +19,12 @@ from prometheus_client import Histogram
 from .database import check_env
 from .database import pool
 
-<<<<<<<< HEAD:app/todo_service.py
 from psycopg.types.json import Json
 
 check_env()
 
 app = Flask(__name__)
 
-========
-DATABASE_KEY = "POSTGRES_DATABASE"
-HOST_KEY = "POSTGRES_HOST"
-USERNAME_KEY = "POSTGRES_USERNAME"
-PASSWORD_KEY = "POSTGRES_PASSWORD"
-PORT_KEY = "POSTGRES_PORT"
-DEFAULT_PORT = 5432
-DEFAULT_DATABASE = "todo_application"
-
-app = Flask(__name__)
-
-def get_db_uri():
-    uri = "postgresql://{}:{}@{}:{}/{}".format(os.environ.get(USERNAME_KEY),
-                                               os.environ.get(PASSWORD_KEY),
-                                               os.environ.get(HOST_KEY),
-                                               os.environ.get(PORT_KEY, DEFAULT_PORT),
-                                               os.environ.get(DATABASE_KEY, DEFAULT_DATABASE))
-    return uri
-
->>>>>>>> b428b4fbaec7f893dc0f8184ba0e4a1ef7d4a83b:app/__init__.py
 request_counter = Counter("requests", "Number of Requests Received", ["request_type"])
 response_times = Histogram("response_times", "Distribution of Request Times", ["request_type"])
 
@@ -295,15 +274,4 @@ def healthcheck():
     else:
         status_code = 200
 
-<<<<<<<< HEAD:app/todo_service.py
     return {"database" : {"healthy" : db_healthy}}, status_code
-========
-    return jsonify({"database" : { "healthy" : db_healthy }}), status_code
-
-if HOST_KEY not in os.environ or \
-   USERNAME_KEY not in os.environ or \
-   PASSWORD_KEY not in os.environ:
-    msg = "Must specify environmental variables {}, {}, and {}.".format(HOST_KEY, USERNAME_KEY, PASSWORD_KEY)
-    print(msg, file=sys.stderr)
-    sys.exit(1)
->>>>>>>> b428b4fbaec7f893dc0f8184ba0e4a1ef7d4a83b:app/__init__.py
