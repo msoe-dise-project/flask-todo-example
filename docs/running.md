@@ -10,7 +10,7 @@ $ docker run -d -e POSTGRES_PASSWORD=postgres --name postgres -p 5432:5432 docke
 The setup database will delete an existing database (if one exists), set up a new database and table, delete an existing role (if one exists), and set up a new role with the name `todo_service` and appropriate permissions.
 
 ```bash
-$ POSTGRES_HOST=localhost POSTGRES_USER_PASSWORD=postgres POSTGRES_ADMIN_PASSWORD=postgres python3 setup_database.py
+$ POSTGRES_HOST=localhost POSTGRES_USER_PASSWORD=postgres POSTGRES_ADMIN_PASSWORD=postgres python3 database-setup/setup_database.py
 ```
 
 ## Start Service
