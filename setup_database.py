@@ -3,7 +3,7 @@
 import os
 import sys
 
-import psycopg2
+import psycopg
 
 HOST_KEY = "POSTGRES_HOST"
 USER_PASSWORD_KEY = "POSTGRES_USER_PASSWORD"
@@ -31,14 +31,13 @@ if __name__ == "__main__":
                                                os.environ.get(PORT_KEY, DEFAULT_PORT),
                                                ADMIN_DATABASE)
 
-    with psycopg2.connect(admin_uri) as conn:
+    with psycopg.connect(admin_uri, autocommit=True) as conn:
         with conn.cursor() as cur:
             # need to disable transactions to create / remove databases
             cur.execute("ABORT TRANSACTION;")
             # I tried using SQL parameters but psycopg2 quotes the strings
             cur.execute("DROP DATABASE IF EXISTS {};".format(DATABASE_NAME))
             cur.execute("CREATE DATABASE {};".format(DATABASE_NAME))
-    conn.close()
 
     database_uri = "postgresql://{}:{}@{}:{}/{}".format(ADMIN_USER,
                                                    os.environ.get(ADMIN_PASSWORD_KEY),
@@ -46,7 +45,7 @@ if __name__ == "__main__":
                                                    os.environ.get(PORT_KEY, DEFAULT_PORT),
                                                    DATABASE_NAME)
 
-    with psycopg2.connect(database_uri) as conn:
+    with psycopg.connect(database_uri) as conn:
         with conn.cursor() as cur:
             cur.execute("DROP TABLE IF EXISTS todo_items;")
 
@@ -63,5 +62,3 @@ if __name__ == "__main__":
             cur.execute("GRANT SELECT, INSERT, UPDATE, DELETE ON todo_items TO {};".format(SERVICE_USER))
 
         conn.commit()
-
-    conn.close()

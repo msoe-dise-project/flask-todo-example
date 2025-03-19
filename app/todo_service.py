@@ -6,7 +6,6 @@ import sys
 
 from flask import Flask
 from flask import request
-from flask.json import jsonify
 
 from marshmallow import fields
 from marshmallow import post_load
@@ -17,25 +16,14 @@ from prometheus_client import Counter
 from prometheus_client import generate_latest
 from prometheus_client import Histogram
 
-import psycopg2
-from psycopg2.extras import Json
+from .database import check_env
+from .database import pool
 
-DATABASE_KEY = "POSTGRES_DATABASE"
-HOST_KEY = "POSTGRES_HOST"
-USERNAME_KEY = "POSTGRES_USERNAME"
-PASSWORD_KEY = "POSTGRES_PASSWORD"
-PORT_KEY = "POSTGRES_PORT"
-DEFAULT_PORT = 5432
+from psycopg.types.json import Json
+
+check_env()
 
 app = Flask(__name__)
-
-def get_db_uri():
-    uri = "postgresql://{}:{}@{}:{}/{}".format(os.environ.get(USERNAME_KEY),
-                                               os.environ.get(PASSWORD_KEY),
-                                               os.environ.get(HOST_KEY),
-                                               os.environ.get(PORT_KEY, DEFAULT_PORT),
-                                               os.environ.get(DATABASE_KEY))
-    return uri
 
 request_counter = Counter("requests", "Number of Requests Received", ["request_type"])
 response_times = Histogram("response_times", "Distribution of Request Times", ["request_type"])
@@ -74,10 +62,9 @@ def create_todo():
     try:
         todo = TodoItemSchema().load(payload)
     except ValidationError as err:
-        return jsonify(err.messages), 400
+        return err.messages, 400
     
-    uri = get_db_uri()
-    with psycopg2.connect(uri) as conn:
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             query = "INSERT INTO todo_items (description, due_date, completed) VALUES (%s, %s, %s) " + \
                     "RETURNING item_id, description, due_date, completed;"
@@ -85,8 +72,7 @@ def create_todo():
             
             item_id, description, due_date, complete = cur.fetchone()
 
-    conn.commit()
-    conn.close()
+        conn.commit()
     
     obj = {
         "item_id" : item_id,
@@ -95,15 +81,14 @@ def create_todo():
         "complete" : complete
     }
 
-    return jsonify(obj), 201
+    return obj, 201
     
 @app.route("/v1/todos", methods=["GET"])
 @response_times.labels(request_type="get::todos").time()
 def list_todos():
     request_counter.labels(request_type="get::todos").inc()
 
-    uri = get_db_uri()
-    with psycopg2.connect(uri) as conn:
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             query = "SELECT item_id, description, due_date, completed FROM todo_items;"
             cur.execute(query)
@@ -119,17 +104,14 @@ def list_todos():
                 
                 todo_items.append(item)
 
-    conn.close()
-
-    return jsonify({"todo_items" : todo_items}), 200
+    return {"todo_items" : todo_items}, 200
     
 @app.route("/v1/todos/<int:todo_id>", methods=["GET"])
 @response_times.labels(request_type="get::todos::todoId").time()
 def get_todo(todo_id):
     request_counter.labels(request_type="get::todos::todoId").inc()
 
-    uri = get_db_uri()
-    with psycopg2.connect(uri) as conn:
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             query = "SELECT description, due_date, completed FROM todo_items " + \
                     "WHERE item_id = %s;"
@@ -137,12 +119,10 @@ def get_todo(todo_id):
             cur.execute(query, (todo_id, ))
             
             if cur.rowcount == 0:
-                return jsonify({"error" : "No todo item with that id found"}), 404
+                return {"error" : "No todo item with that id found"}, 404
             
             description, due_date, completed = cur.fetchone()
 
-    conn.close()
-    
     response = {
         "item_id" : todo_id,
         "description" : description,
@@ -150,27 +130,25 @@ def get_todo(todo_id):
         "complete" : completed
     }
 
-    return jsonify(response), 200
+    return response, 200
 
 @app.route("/v1/todos/<int:todo_id>", methods=["DELETE"])
 @response_times.labels(request_type="delete::todos::todoId").time()
 def delete_todo(todo_id):
     request_counter.labels(request_type="delete::todos::todoId").inc()
 
-    uri = get_db_uri()
-    with psycopg2.connect(uri) as conn:
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             query = "DELETE FROM todo_items WHERE item_id = %s " + \
                     "RETURNING description, due_date, completed;"
             cur.execute(query, (todo_id, ))
             
             if cur.rowcount == 0:
-                return jsonify({"error" : "No todo item with that id found"}), 404
+                return {"error" : "No todo item with that id found"}, 404
             
             description, due_date, completed = cur.fetchone()
 
-    conn.commit()
-    conn.close()
+        conn.commit()
     
     response = {
         "item_id" : todo_id,
@@ -179,27 +157,25 @@ def delete_todo(todo_id):
         "complete" : completed
     }
 
-    return jsonify(response), 200
+    return response, 200
     
 @app.route("/v1/todos/<int:todo_id>/mark_complete", methods=["PUT"])
 @response_times.labels(request_type="put::todos::todoId::mark_complete").time()
 def mark_todo_complete(todo_id):
     request_counter.labels(request_type="put::todos::todoId::mark_complete").inc()
 
-    uri = get_db_uri()
-    with psycopg2.connect(uri) as conn:
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             query = "UPDATE todo_items SET completed = true WHERE item_id = %s " + \
                     "RETURNING description, due_date, completed;"
             cur.execute(query, (todo_id, ))
             
             if cur.rowcount == 0:
-                return jsonify({"error" : "No todo item with that id found"}), 404
+                return {"error" : "No todo item with that id found"}, 404
             
             description, due_date, completed = cur.fetchone()
 
-    conn.commit()
-    conn.close()
+        conn.commit()
     
     response = {
         "item_id" : todo_id,
@@ -208,27 +184,25 @@ def mark_todo_complete(todo_id):
         "complete" : completed
     }
 
-    return jsonify(response), 200
+    return response, 200
 
 @app.route("/v1/todos/<int:todo_id>/mark_incomplete", methods=["PUT"])
 @response_times.labels(request_type="put::todos::todoId::mark_incomplete").time()
 def mark_todo_incomplete(todo_id):
     request_counter.labels(request_type="put::todos::todoId::mark_incomplete").inc()
     
-    uri = get_db_uri()
-    with psycopg2.connect(uri) as conn:
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             query = "UPDATE todo_items SET completed = false WHERE item_id = %s " + \
                     "RETURNING description, due_date, completed;"
             cur.execute(query, (todo_id, ))
             
             if cur.rowcount == 0:
-                return jsonify({"error" : "No todo item with that id found"}), 404
+                return {"error" : "No todo item with that id found"}, 404
             
             description, due_date, completed = cur.fetchone()
 
-    conn.commit()
-    conn.close()
+        conn.commit()
     
     response = {
         "item_id" : todo_id,
@@ -237,7 +211,7 @@ def mark_todo_incomplete(todo_id):
         "complete" : completed
     }
 
-    return jsonify(response), 200
+    return response, 200
     
 @app.route("/v1/todos/<int:todo_id>/due_date", methods=["PUT"])
 @response_times.labels(request_type="put::todos::todoId::due_date").time()
@@ -249,22 +223,20 @@ def set_todo_due_date(todo_id):
     try:
         due_date = DueDateSchema().load(payload)
     except ValidationError as err:
-        return jsonify(err.messages), 400
+        return err.messages, 400
     
-    uri = get_db_uri()
-    with psycopg2.connect(uri) as conn:
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             query = "UPDATE todo_items SET due_date = %s WHERE item_id = %s " + \
                     "RETURNING description, due_date, completed;"
             cur.execute(query, (due_date.due_date, todo_id, ))
             
             if cur.rowcount == 0:
-                return jsonify({"error" : "No todo item with that id found"}), 404
+                return {"error" : "No todo item with that id found"}, 404
             
             description, due_date, completed = cur.fetchone()
 
-    conn.commit()
-    conn.close()
+        conn.commit()
     
     response = {
         "item_id" : todo_id,
@@ -273,7 +245,7 @@ def set_todo_due_date(todo_id):
         "complete" : completed
     }
 
-    return jsonify(response), 200
+    return response, 200
 
 @app.route("/metrics", methods=["GET"])
 def metrics():
@@ -284,8 +256,7 @@ def healthcheck():
     encountered_failure = False
     
     try:
-        uri = get_db_uri()
-        with psycopg2.connect(uri) as conn:
+        with pool.connection() as conn:
             with conn.cursor() as cur:
                 query = "SELECT count(*) FROM todo_items;"
                 cur.execute(query)
@@ -293,7 +264,6 @@ def healthcheck():
                 # returns a tuple of 1 element
                 count = cur.fetchone()[0]
 
-        conn.close()
         db_healthy = True
     except:
         db_healthy = False
@@ -304,15 +274,4 @@ def healthcheck():
     else:
         status_code = 200
 
-    return jsonify({"database" : { "healthy" : db_healthy }}), status_code
-
-if __name__ == "__main__":
-    if DATABASE_KEY not in os.environ or \
-       HOST_KEY not in os.environ or \
-       USERNAME_KEY not in os.environ or \
-       PASSWORD_KEY not in os.environ:
-        msg = "Must specify environmental variables {}, {}, {}, and {}.".format(DATABASE_KEY, HOST_KEY, USERNAME_KEY, PASSWORD_KEY)
-        print(msg, file=sys.stderr)
-        sys.exit(1)
-
-    app.run(debug=True, host="localhost", port="8000")
+    return {"database" : {"healthy" : db_healthy}}, status_code
