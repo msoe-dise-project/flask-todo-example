@@ -29,5 +29,5 @@ The tests can be run in a separate terminal as follows:
 
 ```bash
 $ source venv/bin/activate
-$ BASE_URL=http://localhost:8000 python test_todo_service.py
+$ BASE_URL=http://localhost:8000 python tests/test_todo_service.py
 ```
